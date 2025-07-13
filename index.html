@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>&Coin</title>
+    <style>
+        :root {
+            --primary: #0a0a0a;
+            --secondary: #f0f0f0;
+            --accent: #5e5e5e;
+            --transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background-color: var(--primary);
+            color: var(--secondary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Loading screen logo styles */
+        #loading-branding {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 1;
+            transition: opacity 0.5s var(--transition);
+        }
+        
+        #loading-branding.fade-out {
+            opacity: 0;
+        }
+        
+        .logo-img {
+            height: 58px;
+            width: auto;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+        
+        .logo-img:hover {
+            opacity: 1;
+        }
+        
+        .twitter-link {
+            color: var(--secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+        
+        .twitter-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        #app {
+            display: flex;
+            height: 100%;
+            position: relative;
+        }
+        
+        /* Split view layout */
+        .split-panel {
+            flex: 1;
+            padding: 2rem;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #left-panel {
+            border-right: 1px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        #right-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Philosophy text elements */
+        .philosophy-text {
+            font-size: 1.5rem;
+            line-height: 1.4;
+            opacity: 0;
+            position: absolute;
+            transition: opacity 0.6s var(--transition);
+        }
+        
+        .philosophy-text.active {
+            opacity: 1;
+        }
+        
+        /* Ampersand navigation */
+        .amp-nav {
+            position: absolute;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--secondary);
+            background: none;
+            border: none;
+            font-family: inherit;
+        }
+        
+        .amp-nav:hover {
+            color: var(--accent);
+        }
+        
+        /* Main ampersand interaction */
+        #main-ampersand {
+            font-size: 8rem;
+            cursor: pointer;
+            transition: transform 0.8s var(--transition);
+            position: relative;
+            z-index: 10;
+        }
+        
+        #main-ampersand:hover {
+            transform: rotate(15deg) scale(1.1);
+        }
+        
+        /* Terminal interface */
+        #terminal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            opacity: 1;
+            transition: opacity 0.6s var(--transition);
+        }
+        
+        #terminal.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        #terminal-output {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        #terminal-input {
+            display: flex;
+            align-items: center;
+        }
+        
+        #terminal-prompt {
+            margin-right: 0.5rem;
+        }
+        
+        #terminal-cmd {
+            background: none;
+            border: none;
+            color: var(--secondary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            flex: 1;
+            outline: none;
+        }
+        
+        /* Header with accumulating ampersands */
+        #ampersand-header {
+            position: absolute;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2rem;
+            letter-spacing: 0.2rem;
+            opacity: 0.7;
+        }
+        
+        /* Loading screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 1s var(--transition);
+        }
+        
+        #loading-ampersands {
+            font-size: 2rem;
+            letter-spacing: 1rem;
+        }
+        
+        /* Modal windows */
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--primary);
+            border: 1px solid var(--accent);
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.6s var(--transition);
+        }
+        
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--secondary);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="loading-screen">
+        <div id="loading-branding">
+            <img src="& (1).png" alt="&Coin Logo" class="logo-img">
+            <a href="https://twitter.com/yourhandle" class="twitter-link" target="_blank"> Twitter @ community</a>
+        </div>
+        <div id="loading-ampersands">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+    </div>
+    
+    <div id="ampersand-header"></div>
+    
+    <div id="app">
+        <div class="split-panel" id="left-panel">
+            <!-- Philosophy text will be injected here -->
+        </div>
+        
+        <div class="split-panel" id="right-panel">
+            <div id="main-ampersand">&</div>
+            
+            <!-- Ampersand navigation elements -->
+            <button class="amp-nav" style="top: 20%; left: 30%; font-size: 1.8rem;">&</button>
+            <button class="amp-nav" style="bottom: 15%; right: 25%; font-weight: 600;">&</button>
+            <button class="amp-nav" style="top: 40%; right: 15%; transform: rotate(45deg);">&</button>
+        </div>
+    </div>
+    
+    <div id="terminal">
+        <div id="terminal-output"></div>
+        <div id="terminal-input">
+            <span id="terminal-prompt">></span>
+            <input type="text" id="terminal-cmd" autofocus>
+        </div>
+    </div>
+    
+    <!-- Modal windows -->
+    <div class="modal" id="about-modal">
+        <button class="modal-close">&</button>
+        <h2>&Coin</h2>
+        <p>The conjunction of everything that never belonged.</p>
+        <p>A coin that doesn't stand on its own — it connects, it fuses, it attaches, but it's never the subject.</p>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize state
+            let interactionCount = 0;
+            let terminalVisible = false;
+            const philosophyTexts = [
+                "&hate", "&love", "&dust", "&liquidity", 
+                "&ego", "&exit", "&void", "&fusion",
+                "&coin is the space between", "&but never the thing itself",
+                "&a connector without endpoints", "&the absence of subject"
+            ];
+            const commands = {
+                "launch": "&initiating sequence",
+                "betray": "&trust is the first illusion",
+                "trade": "&exchange without value",
+                "drown": "&submersion complete",
+                "help": "Available commands: &launch, &betray, &trade, &drown, &clear",
+                "clear": ""
+            };
+            
+            // DOM elements
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingBranding = document.getElementById('loading-branding');
+            const loadingAmpersands = document.getElementById('loading-ampersands');
+            const leftPanel = document.getElementById('left-panel');
+            const rightPanel = document.getElementById('right-panel');
+            const mainAmpersand = document.getElementById('main-ampersand');
+            const ampersandHeader = document.getElementById('ampersand-header');
+            const terminal = document.getElementById('terminal');
+            const terminalOutput = document.getElementById('terminal-output');
+            const terminalCmd = document.getElementById('terminal-cmd');
+            const aboutModal = document.getElementById('about-modal');
+            const ampNavs = document.querySelectorAll('.amp-nav');
+            
+            // Animate loading screen
+            let loadCount = 0;
+            const loadInterval = setInterval(() => {
+                loadCount++;
+                loadingAmpersands.textContent = Array(loadCount % 5).fill('&').join(' ');
+                
+                if (loadCount > 10) {
+                    clearInterval(loadInterval);
+                    // Fade out branding first
+                    loadingBranding.classList.add('fade-out');
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                            startPhilosophyText();
+                        }, 1000);
+                    }, 500);
+                }
+            }, 300);
+            
+            // Start philosophy text rotation
+            function startPhilosophyText() {
+                let currentIndex = 0;
+                
+                function showNextText() {
+                    // Clear previous
+                    const currentActive = leftPanel.querySelector('.philosophy-text.active');
+                    if (currentActive) {
+                        currentActive.classList.remove('active');
+                        setTimeout(() => currentActive.remove(), 600);
+                    }
+                    
+                    // Create new text element
+                    const textEl = document.createElement('div');
+                    textEl.className = 'philosophy-text';
+                    textEl.textContent = philosophyTexts[currentIndex];
+                    leftPanel.appendChild(textEl);
+                    
+                    // Position randomly
+                    textEl.style.left = `${10 + Math.random() * 60}%`;
+                    textEl.style.top = `${10 + Math.random() * 60}%`;
+                    
+                    // Activate
+                    setTimeout(() => textEl.classList.add('active'), 10);
+                    
+                    // Update index
+                    currentIndex = (currentIndex + 1) % philosophyTexts.length;
+                    
+                    // Schedule next
+                    setTimeout(showNextText, 3000 + Math.random() * 2000);
+                }
+                
+                showNextText();
+            }
+            
+            // Handle main ampersand click
+            mainAmpersand.addEventListener('click', () => {
+                interactionCount++;
+                updateHeader();
+                
+                // Rotate and scale
+                mainAmpersand.style.transform = `rotate(${interactionCount * 45}deg) scale(${1 + interactionCount * 0.1})`;
+                
+                // Random chance to open terminal
+                if (Math.random() > 0.7) {
+                    toggleTerminal();
+                }
+            });
+            
+            // Handle ampersand nav clicks
+            ampNavs.forEach((amp, index) => {
+                amp.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    interactionCount++;
+                    updateHeader();
+                    
+                    // Different behaviors based on which ampersand
+                    switch(index) {
+                        case 0:
+                            // Open about modal
+                            aboutModal.classList.add('active');
+                            break;
+                        case 1:
+                            // Toggle terminal
+                            toggleTerminal();
+                            break;
+                        case 2:
+                            // Random transform
+                            amp.style.transform = `rotate(${Math.random() * 360}deg) scale(${1 + Math.random()})`;
+                            break;
+                    }
+                });
+            });
+            
+            // Update header with accumulating ampersands
+            function updateHeader() {
+                ampersandHeader.textContent = Array(interactionCount).fill('&').join('');
+            }
+            
+            // Toggle terminal visibility
+            function toggleTerminal() {
+                terminalVisible = !terminalVisible;
+                terminal.classList.toggle('hidden', !terminalVisible);
+                if (terminalVisible) {
+                    terminalCmd.focus();
+                }
+            }
+            
+            // Handle terminal commands
+            terminalCmd.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const cmd = terminalCmd.value.trim();
+                    terminalCmd.value = '';
+                    
+                    // Add command to output
+                    addTerminalLine(`> ${cmd}`);
+                    
+                    // Process command
+                    if (cmd.startsWith('&')) {
+                        const baseCmd = cmd.substring(1);
+                        if (commands[baseCmd]) {
+                            addTerminalLine(commands[baseCmd]);
+                            
+                            // Special command behaviors
+                            if (baseCmd === 'clear') {
+                                terminalOutput.innerHTML = '';
+                            }
+                        } else {
+                            addTerminalLine(`&unknown command: ${baseCmd}`);
+                        }
+                    } else if (cmd) {
+                        addTerminalLine('&commands must start with &');
+                    }
+                }
+            });
+            
+            // Add line to terminal output
+            function addTerminalLine(text) {
+                const line = document.createElement('div');
+                line.textContent = text;
+                terminalOutput.appendChild(line);
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            }
+            
+            // Close modal when clicking close button
+            aboutModal.querySelector('.modal-close').addEventListener('click', () => {
+                aboutModal.classList.remove('active');
+            });
+            
+            // Close modal when clicking outside
+            aboutModal.addEventListener('click', (e) => {
+                if (e.target === aboutModal) {
+                    aboutModal.classList.remove('active');
+                }
+            });
+            
+            // Initial terminal message
+            setTimeout(() => {
+                addTerminalLine('&Coin terminal interface');
+                addTerminalLine('Type &help for available commands');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
